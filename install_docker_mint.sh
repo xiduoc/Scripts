@@ -1,26 +1,44 @@
 #!/bin/bash
 
-# Update the apt package index and install necessary packages
-sudo apt update
-sudo apt install -y \
+# Update package lists
+sudo apt-get update
+
+# Install prerequisites
+sudo apt-get install -y \
+    apt-transport-https \
     ca-certificates \
     curl \
-    gnupg \
-    lsb-release
+    software-properties-common \
+    gnupg
 
 # Add Docker's official GPG key
-sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
-# Set up the stable repository
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-    $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+# Set up the stable repository for Docker
+# Note: Linux Mint is based on Ubuntu, so we use the Ubuntu repository
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$UBUNTU_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-# Update the apt package index again
-sudo apt update
+# Update package lists again after adding Docker repository
+sudo apt-get update
 
-# Install Docker Engine, containerd, and Docker Compose
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+# Install Docker Engine
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 
-# Verify that Docker Engine is installed correctly by running the hello-world image
-sudo docker run hello-world
+# Add current user to docker group to run Docker without sudo
+sudo usermod -aG docker $USER
+
+# Start and enable Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Verify Docker installation
+docker --version
+docker compose version
+
+# Print post-installation message
+echo "Docker installation completed!"
+echo "To start using Docker without sudo, please log out and log back in."
+echo "You can test Docker by running: docker run hello-world"
