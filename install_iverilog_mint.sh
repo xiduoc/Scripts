@@ -7,6 +7,10 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
+# Lấy real user (user thực sự) từ sudo
+REAL_USER="${SUDO_USER:-$USER}"
+REAL_HOME=$(getent passwd "$REAL_USER" | cut -d: -f6)
+
 # Function để kiểm tra lệnh đã được cài đặt chưa
 check_command() {
     if ! command -v "$1" &> /dev/null; then
@@ -84,9 +88,12 @@ else
     print_status "GTKWave đã được cài đặt"
 fi
 
-# Tạo thư mục project mẫu
-PROJECT_DIR="$HOME/verilog_projects"
+# Tạo thư mục project mẫu trong home directory của real user
+PROJECT_DIR="$REAL_HOME/verilog_projects"
 mkdir -p "$PROJECT_DIR/example"
+
+# Đặt quyền sở hữu cho thư mục project
+chown -R "$REAL_USER":"$REAL_USER" "$PROJECT_DIR"
 
 # Tạo file Verilog mẫu
 cat > "$PROJECT_DIR/example/counter.v" << 'EOL'
@@ -163,8 +170,9 @@ iverilog -o sim counter.v counter_tb.v
 gtkwave counter_tb.vcd &
 EOL
 
-# Cấp quyền thực thi cho script
+# Cấp quyền thực thi cho script và set ownership
 chmod +x "$PROJECT_DIR/example/run_sim.sh"
+chown "$REAL_USER":"$REAL_USER" "$PROJECT_DIR/example/run_sim.sh"
 
 # Tạo file README
 cat > "$PROJECT_DIR/example/README.md" << 'EOL'
@@ -194,8 +202,11 @@ cat > "$PROJECT_DIR/example/README.md" << 'EOL'
 - count: 4-bit counter output
 EOL
 
+# Set ownership cho tất cả các file trong project
+chown -R "$REAL_USER":"$REAL_USER" "$PROJECT_DIR/example"
+
 # Dọn dẹp
-cd "$HOME" || exit
+cd "$REAL_HOME" || exit
 rm -rf "$WORK_DIR"
 
 print_status "Cài đặt hoàn tất!"
