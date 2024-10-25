@@ -38,7 +38,7 @@ echo "Danh sách các connection hiện có:"
 nmcli connection show
 
 # Nhập tên connection
-read -p "Nhập tên connection (ví dụ: Ethernet hoặc WiFi): " CON_NAME
+read -p "Nhập tên connection (ví dụ: Wired connection 1): " CON_NAME
 
 # Kiểm tra xem connection có tồn tại không
 if ! nmcli connection show "$CON_NAME" &> /dev/null; then 
